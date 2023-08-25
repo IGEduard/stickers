@@ -2,14 +2,11 @@ apply plugin: 'com.android.application'
 
 android {
     //the compression of webp file during build causes problem with FileDescriptor in ContentProvider.
-    aaptOptions {
-        noCompress "webp"
-    }
-    compileSdkVersion 30
+    compileSdkVersion 31
     defaultConfig {
-        applicationId "com.example.samplestickerapp"
+        applicationId "com.eduard.emoteStickers"
         minSdkVersion 15
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -38,11 +35,16 @@ android {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
-
     packagingOptions {
-        exclude 'lib/*/libnative-imagetranscoder.so'
-        exclude 'lib/*/libnative-filters.so'
+        jniLibs {
+            excludes += ['lib/*/libnative-imagetranscoder.so', 'lib/*/libnative-filters.so']
+        }
     }
+    namespace 'com.example.samplestickerapp'
+    androidResources {
+        noCompress 'webp'
+    }
+
 
     // Configures multiple APKs based on ABI.
     // see https://developer.android.com/studio/build/configure-apk-splits#configure-abi-split
