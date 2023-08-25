@@ -89,7 +89,7 @@ task checkRelease {
     }
 }
 
-tasks.whenTaskAdded { task ->
+tasks.configureEach { task -> // replaced whenTaskAdded due to gradle upgrade error
     println(task.name)
     if (task.name.contains("assembleDebug")) {
         task.dependsOn checkDebug
