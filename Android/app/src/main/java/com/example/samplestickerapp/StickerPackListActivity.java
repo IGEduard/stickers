@@ -8,17 +8,20 @@
 
 package com.example.samplestickerapp;
 
-import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.ViewTreeObserver;
 
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 
 public class StickerPackListActivity extends AddStickerPackActivity {
@@ -27,49 +30,64 @@ public class StickerPackListActivity extends AddStickerPackActivity {
     private LinearLayoutManager packLayoutManager;
     private RecyclerView packRecyclerView;
     private StickerPackListAdapter allStickerPacksListAdapter;
-    private WhiteListCheckAsyncTask whiteListCheckAsyncTask;
     private ArrayList<StickerPack> stickerPackList;
+
+    private final Executor executor = Executors.newSingleThreadExecutor();
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sticker_pack_list);
         packRecyclerView = findViewById(R.id.sticker_pack_list);
-        stickerPackList = getIntent().getParcelableArrayListExtra(EXTRA_STICKER_PACK_LIST_DATA);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            stickerPackList = getIntent().getParcelableArrayListExtra(EXTRA_STICKER_PACK_LIST_DATA, StickerPack.class);
+        } else {
+            stickerPackList = getIntent().getParcelableArrayListExtra(EXTRA_STICKER_PACK_LIST_DATA);
+        }
         showStickerPackList(stickerPackList);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle(getResources().getQuantityString(R.plurals.title_activity_sticker_packs_list, stickerPackList.size()));
         }
-
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        whiteListCheckAsyncTask = new WhiteListCheckAsyncTask(this);
-        whiteListCheckAsyncTask.execute(stickerPackList.toArray(new StickerPack[0]));
+        checkWhiteListStatus(stickerPackList);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (whiteListCheckAsyncTask != null && !whiteListCheckAsyncTask.isCancelled()) {
-            whiteListCheckAsyncTask.cancel(true);
-        }
+    private void checkWhiteListStatus(List<StickerPack> stickerPackList) {
+        executor.execute(() -> {
+            for (StickerPack stickerPack : stickerPackList) {
+                stickerPack.setIsWhitelisted(WhitelistCheck.isWhitelisted(StickerPackListActivity.this, stickerPack.identifier));
+            }
+            handler.post(() -> {
+                if (allStickerPacksListAdapter != null) {
+                    allStickerPacksListAdapter.setStickerPackList(stickerPackList);
+                    allStickerPacksListAdapter.notifyDataSetChanged();
+                }
+            });
+        });
     }
 
     private void showStickerPackList(List<StickerPack> stickerPackList) {
         allStickerPacksListAdapter = new StickerPackListAdapter(stickerPackList, onAddButtonClickedListener);
         packRecyclerView.setAdapter(allStickerPacksListAdapter);
         packLayoutManager = new LinearLayoutManager(this);
-        packLayoutManager.setOrientation(RecyclerView.VERTICAL);
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(
                 packRecyclerView.getContext(),
                 packLayoutManager.getOrientation()
         );
         packRecyclerView.addItemDecoration(dividerItemDecoration);
         packRecyclerView.setLayoutManager(packLayoutManager);
-        packRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(this::recalculateColumnCount);
+        packRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                recalculateColumnCount();
+                packRecyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            }
+        });
     }
 
 
@@ -86,36 +104,6 @@ public class StickerPackListActivity extends AddStickerPackActivity {
             int maxNumberOfImagesInARow = Math.min(STICKER_PREVIEW_DISPLAY_LIMIT, max);
             int minMarginBetweenImages = (widthOfImageRow - maxNumberOfImagesInARow * previewSize) / (maxNumberOfImagesInARow - 1);
             allStickerPacksListAdapter.setImageRowSpec(maxNumberOfImagesInARow, minMarginBetweenImages);
-        }
-    }
-
-
-    static class WhiteListCheckAsyncTask extends AsyncTask<StickerPack, Void, List<StickerPack>> {
-        private final WeakReference<StickerPackListActivity> stickerPackListActivityWeakReference;
-
-        WhiteListCheckAsyncTask(StickerPackListActivity stickerPackListActivity) {
-            this.stickerPackListActivityWeakReference = new WeakReference<>(stickerPackListActivity);
-        }
-
-        @Override
-        protected final List<StickerPack> doInBackground(StickerPack... stickerPackArray) {
-            final StickerPackListActivity stickerPackListActivity = stickerPackListActivityWeakReference.get();
-            if (stickerPackListActivity == null) {
-                return Arrays.asList(stickerPackArray);
-            }
-            for (StickerPack stickerPack : stickerPackArray) {
-                stickerPack.setIsWhitelisted(WhitelistCheck.isWhitelisted(stickerPackListActivity, stickerPack.identifier));
-            }
-            return Arrays.asList(stickerPackArray);
-        }
-
-        @Override
-        protected void onPostExecute(List<StickerPack> stickerPackList) {
-            final StickerPackListActivity stickerPackListActivity = stickerPackListActivityWeakReference.get();
-            if (stickerPackListActivity != null) {
-                stickerPackListActivity.allStickerPacksListAdapter.setStickerPackList(stickerPackList);
-                stickerPackListActivity.allStickerPacksListAdapter.notifyDataSetChanged();
-            }
         }
     }
 }

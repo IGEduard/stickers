@@ -14,13 +14,15 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.view.SimpleDraweeView;
 
-public class StickerPreviewAdapter extends RecyclerView.Adapter<StickerPreviewViewHolder> {
+public class StickerPreviewAdapter extends ListAdapter<Sticker, StickerPreviewViewHolder> {
 
     private static final float COLLAPSED_STICKER_PREVIEW_BACKGROUND_ALPHA = 1f;
     private static final float EXPANDED_STICKER_PREVIEW_BACKGROUND_ALPHA = 0.2f;
@@ -29,7 +31,6 @@ public class StickerPreviewAdapter extends RecyclerView.Adapter<StickerPreviewVi
     private final StickerPack stickerPack;
 
     private final int cellSize;
-    private final int cellLimit;
     private final int cellPadding;
     private final int errorResource;
     private final SimpleDraweeView expandedStickerPreview;
@@ -47,13 +48,14 @@ public class StickerPreviewAdapter extends RecyclerView.Adapter<StickerPreviewVi
             final int cellPadding,
             @NonNull final StickerPack stickerPack,
             final SimpleDraweeView expandedStickerView) {
+        super(new StickerDiffCallback());
         this.cellSize = cellSize;
         this.cellPadding = cellPadding;
-        this.cellLimit = 0;
         this.layoutInflater = layoutInflater;
         this.errorResource = errorResource;
         this.stickerPack = stickerPack;
         this.expandedStickerPreview = expandedStickerView;
+        submitList(stickerPack.getStickers());
     }
 
     @NonNull
@@ -73,8 +75,9 @@ public class StickerPreviewAdapter extends RecyclerView.Adapter<StickerPreviewVi
 
     @Override
     public void onBindViewHolder(@NonNull final StickerPreviewViewHolder stickerPreviewViewHolder, final int i) {
+        Sticker sticker = getItem(i);
         stickerPreviewViewHolder.stickerPreviewView.setImageResource(errorResource);
-        stickerPreviewViewHolder.stickerPreviewView.setImageURI(StickerPackLoader.getStickerAssetUri(stickerPack.identifier, stickerPack.getStickers().get(i).imageFileName));
+        stickerPreviewViewHolder.stickerPreviewView.setImageURI(StickerPackLoader.getStickerAssetUri(stickerPack.identifier, sticker.imageFileName));
         stickerPreviewViewHolder.stickerPreviewView.setOnClickListener(v -> expandPreview(i, stickerPreviewViewHolder.stickerPreviewView));
     }
 
@@ -169,7 +172,7 @@ public class StickerPreviewAdapter extends RecyclerView.Adapter<StickerPreviewVi
         if (expandedStickerPreview != null) {
             positionExpandedStickerPreview(position);
 
-            final Uri stickerAssetUri = StickerPackLoader.getStickerAssetUri(stickerPack.identifier, stickerPack.getStickers().get(position).imageFileName);
+            final Uri stickerAssetUri = StickerPackLoader.getStickerAssetUri(stickerPack.identifier, getItem(position).imageFileName);
             DraweeController controller = Fresco.newDraweeControllerBuilder()
                     .setUri(stickerAssetUri)
                     .setAutoPlayAnimations(true)
@@ -196,13 +199,15 @@ public class StickerPreviewAdapter extends RecyclerView.Adapter<StickerPreviewVi
         return expandedStickerPreview != null && expandedStickerPreview.getVisibility() == View.VISIBLE;
     }
 
-    @Override
-    public int getItemCount() {
-        int numberOfPreviewImagesInPack;
-        numberOfPreviewImagesInPack = stickerPack.getStickers().size();
-        if (cellLimit > 0) {
-            return Math.min(numberOfPreviewImagesInPack, cellLimit);
+    static class StickerDiffCallback extends DiffUtil.ItemCallback<Sticker> {
+        @Override
+        public boolean areItemsTheSame(@NonNull Sticker oldItem, @NonNull Sticker newItem) {
+            return oldItem.imageFileName.equals(newItem.imageFileName);
         }
-        return numberOfPreviewImagesInPack;
+
+        @Override
+        public boolean areContentsTheSame(@NonNull Sticker oldItem, @NonNull Sticker newItem) {
+            return oldItem.emojis.equals(newItem.emojis) && oldItem.size == newItem.size;
+        }
     }
 }

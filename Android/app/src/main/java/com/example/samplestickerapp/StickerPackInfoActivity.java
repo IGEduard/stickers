@@ -9,20 +9,18 @@
 package com.example.samplestickerapp;
 
 import android.content.Intent;
-import android.graphics.Rect;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
-import androidx.core.view.ViewCompat;
+import androidx.core.content.ContextCompat;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -44,18 +42,12 @@ public class StickerPackInfoActivity extends BaseActivity {
         final TextView trayIcon = findViewById(R.id.tray_icon);
         try {
             final InputStream inputStream = getContentResolver().openInputStream(Uri.parse(trayIconUriString));
-            final BitmapDrawable trayDrawable = new BitmapDrawable(getResources(), inputStream);
-            final Drawable emailDrawable = getDrawableForAllAPIs(R.drawable.sticker_3rdparty_email);
-            trayDrawable.setBounds(new Rect(0, 0, emailDrawable.getIntrinsicWidth(), emailDrawable.getIntrinsicHeight()));
-            if (Build.VERSION.SDK_INT > 17) {
-                trayIcon.setCompoundDrawablesRelative(trayDrawable, null, null, null);
-            } else {
-                if (ViewCompat.getLayoutDirection(trayIcon) == ViewCompat.LAYOUT_DIRECTION_LTR) {
-                    trayIcon.setCompoundDrawables(null, null, trayDrawable, null);
-                } else {
-                    trayIcon.setCompoundDrawables(trayDrawable, null, null, null);
-                }
+            final BitmapDrawable trayDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeStream(inputStream));
+            Drawable emailDrawable = ContextCompat.getDrawable(this, R.drawable.sticker_3rdparty_email);
+            if (emailDrawable != null) {
+                trayDrawable.setBounds(0, 0, emailDrawable.getIntrinsicWidth(), emailDrawable.getIntrinsicHeight());
             }
+            trayIcon.setCompoundDrawablesWithIntrinsicBounds(trayDrawable, null, null, null);
         } catch (FileNotFoundException e) {
             Log.e(TAG, "could not find the uri for the tray image:" + trayIconUriString);
         }
@@ -94,13 +86,5 @@ public class StickerPackInfoActivity extends BaseActivity {
         Uri uri = Uri.parse(website);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         startActivity(intent);
-    }
-
-    private Drawable getDrawableForAllAPIs(@DrawableRes int id) {
-        if (Build.VERSION.SDK_INT >= 21) {
-            return getDrawable(id);
-        } else {
-            return getResources().getDrawable(id);
-        }
     }
 }

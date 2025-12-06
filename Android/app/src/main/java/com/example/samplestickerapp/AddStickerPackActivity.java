@@ -18,13 +18,38 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
 public abstract class AddStickerPackActivity extends BaseActivity {
-    private static final int ADD_PACK = 200;
     private static final String TAG = "AddStickerPackActivity";
+    private ActivityResultLauncher<Intent> addStickerPackLauncher;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        addStickerPackLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_CANCELED) {
+                        if (result.getData() != null) {
+                            final String validationError = result.getData().getStringExtra("validation_error");
+                            if (validationError != null) {
+                                if (BuildConfig.DEBUG) {
+                                    //validation error should be shown to developer only, not users.
+                                    MessageDialogFragment.newInstance(R.string.title_validation_error, validationError).show(getSupportFragmentManager(), "validation error");
+                                }
+                                Log.e(TAG, "Validation failed:" + validationError);
+                            }
+                        } else {
+                            new StickerPackNotAddedMessageFragment().show(getSupportFragmentManager(), "sticker_pack_not_added");
+                        }
+                    }
+                });
+    }
 
     protected void addStickerPackToWhatsApp(String identifier, String stickerPackName) {
         try {
@@ -56,7 +81,7 @@ public abstract class AddStickerPackActivity extends BaseActivity {
         Intent intent = createIntentToAddStickerPack(identifier, stickerPackName);
         intent.setPackage(whatsappPackageName);
         try {
-            startActivityForResult(intent, ADD_PACK);
+            addStickerPackLauncher.launch(intent);
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, R.string.add_pack_fail_prompt_update_whatsapp, Toast.LENGTH_LONG).show();
         }
@@ -66,7 +91,7 @@ public abstract class AddStickerPackActivity extends BaseActivity {
     private void launchIntentToAddPackToChooser(String identifier, String stickerPackName) {
         Intent intent = createIntentToAddStickerPack(identifier, stickerPackName);
         try {
-            startActivityForResult(Intent.createChooser(intent, getString(R.string.add_to_whatsapp)), ADD_PACK);
+            addStickerPackLauncher.launch(Intent.createChooser(intent, getString(R.string.add_to_whatsapp)));
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, R.string.add_pack_fail_prompt_update_whatsapp, Toast.LENGTH_LONG).show();
         }
@@ -80,27 +105,6 @@ public abstract class AddStickerPackActivity extends BaseActivity {
         intent.putExtra(StickerPackDetailsActivity.EXTRA_STICKER_PACK_AUTHORITY, BuildConfig.CONTENT_PROVIDER_AUTHORITY);
         intent.putExtra(StickerPackDetailsActivity.EXTRA_STICKER_PACK_NAME, stickerPackName);
         return intent;
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ADD_PACK) {
-            if (resultCode == Activity.RESULT_CANCELED) {
-                if (data != null) {
-                    final String validationError = data.getStringExtra("validation_error");
-                    if (validationError != null) {
-                        if (BuildConfig.DEBUG) {
-                            //validation error should be shown to developer only, not users.
-                            MessageDialogFragment.newInstance(R.string.title_validation_error, validationError).show(getSupportFragmentManager(), "validation error");
-                        }
-                        Log.e(TAG, "Validation failed:" + validationError);
-                    }
-                } else {
-                    new StickerPackNotAddedMessageFragment().show(getSupportFragmentManager(), "sticker_pack_not_added");
-                }
-            }
-        }
     }
 
     public static final class StickerPackNotAddedMessageFragment extends DialogFragment {

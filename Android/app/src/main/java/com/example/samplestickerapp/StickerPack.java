@@ -8,6 +8,7 @@
 
 package com.example.samplestickerapp;
 
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -64,13 +65,17 @@ class StickerPack implements Parcelable {
         privacyPolicyWebsite = in.readString();
         licenseAgreementWebsite = in.readString();
         iosAppStoreLink = in.readString();
-        stickers = in.createTypedArrayList(Sticker.CREATOR);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            stickers = in.createTypedArrayList(Sticker.CREATOR);
+        } else {
+            stickers = in.createTypedArrayList(Sticker.CREATOR);
+        }
         totalSize = in.readLong();
         androidPlayStoreLink = in.readString();
-        isWhitelisted = in.readByte() != 0;
+        isWhitelisted = in.readBoolean();
         imageDataVersion = in.readString();
-        avoidCache = in.readByte() != 0;
-        animatedStickerPack = in.readByte() != 0;
+        avoidCache = in.readBoolean();
+        animatedStickerPack = in.readBoolean();
     }
 
     public static final Creator<StickerPack> CREATOR = new Creator<StickerPack>() {
@@ -128,9 +133,9 @@ class StickerPack implements Parcelable {
         dest.writeTypedList(stickers);
         dest.writeLong(totalSize);
         dest.writeString(androidPlayStoreLink);
-        dest.writeByte((byte) (isWhitelisted ? 1 : 0));
+        dest.writeBoolean(isWhitelisted);
         dest.writeString(imageDataVersion);
-        dest.writeByte((byte) (avoidCache ? 1 : 0));
-        dest.writeByte((byte) (animatedStickerPack ? 1 : 0));
+        dest.writeBoolean(avoidCache);
+        dest.writeBoolean(animatedStickerPack);
     }
 }

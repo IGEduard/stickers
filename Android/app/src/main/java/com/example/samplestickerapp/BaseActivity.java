@@ -20,7 +20,7 @@ import androidx.fragment.app.DialogFragment;
 public abstract class BaseActivity extends AppCompatActivity {
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        getOnBackPressedDispatcher().onBackPressed();
         return true;
     }
 
@@ -40,10 +40,10 @@ public abstract class BaseActivity extends AppCompatActivity {
         @NonNull
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
-            @StringRes final int title = getArguments().getInt(ARG_TITLE_ID);
-            String message = getArguments().getString(ARG_MESSAGE);
+            @StringRes final int title = requireArguments().getInt(ARG_TITLE_ID);
+            String message = requireArguments().getString(ARG_MESSAGE);
 
-            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity())
+            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(requireActivity())
                     .setMessage(message)
                     .setCancelable(true)
                     .setPositiveButton(android.R.string.ok, (dialog, which) -> dismiss());
