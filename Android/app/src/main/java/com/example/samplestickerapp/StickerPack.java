@@ -1,5 +1,5 @@
 /*
- * Copyright (c) WhatsApp Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
@@ -8,7 +8,6 @@
 
 package com.example.samplestickerapp;
 
-import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -65,17 +64,13 @@ class StickerPack implements Parcelable {
         privacyPolicyWebsite = in.readString();
         licenseAgreementWebsite = in.readString();
         iosAppStoreLink = in.readString();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            stickers = in.createTypedArrayList(Sticker.CREATOR);
-        } else {
-            stickers = in.createTypedArrayList(Sticker.CREATOR);
-        }
+        stickers = in.createTypedArrayList(Sticker.CREATOR);
         totalSize = in.readLong();
         androidPlayStoreLink = in.readString();
-        isWhitelisted = in.readBoolean();
+        isWhitelisted = in.readByte() != 0;
         imageDataVersion = in.readString();
-        avoidCache = in.readBoolean();
-        animatedStickerPack = in.readBoolean();
+        avoidCache = in.readByte() != 0;
+        animatedStickerPack = in.readByte() != 0;
     }
 
     public static final Creator<StickerPack> CREATOR = new Creator<StickerPack>() {
@@ -133,9 +128,9 @@ class StickerPack implements Parcelable {
         dest.writeTypedList(stickers);
         dest.writeLong(totalSize);
         dest.writeString(androidPlayStoreLink);
-        dest.writeBoolean(isWhitelisted);
+        dest.writeByte((byte) (isWhitelisted ? 1 : 0));
         dest.writeString(imageDataVersion);
-        dest.writeBoolean(avoidCache);
-        dest.writeBoolean(animatedStickerPack);
+        dest.writeByte((byte) (avoidCache ? 1 : 0));
+        dest.writeByte((byte) (animatedStickerPack ? 1 : 0));
     }
 }
