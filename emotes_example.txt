@@ -1,0 +1,14 @@
+# Lista de emote-uri 7TV pentru conversie
+# Un ID per linie
+# Liniile care încep cu # sunt comentarii
+
+# === ANIMATED EMOTES ===
+01F6MQ33FG000FFJ97ZB8MWV52
+60ae8f5d259ac5a73e56a426
+60ae39e7259ac5a73e4da1d6
+603caab3faf3a00014deff26
+
+# === STATIC EMOTES ===
+01F6NACCD80006SZ7ZW5FMWKWK
+60ae434b77137b000de9e675
+60afb48c7c3bb5f6a4d51de7
