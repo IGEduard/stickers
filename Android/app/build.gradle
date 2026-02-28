@@ -4,11 +4,11 @@ plugins {
 
 android {
     //the compression of webp file during build causes problem with FileDescriptor in ContentProvider.
-    compileSdk 33
+    compileSdk 35
     defaultConfig {
         applicationId "com.eduard.emoteStickers"
-        minSdkVersion 15
-        targetSdkVersion 33
+        minSdkVersion 21
+        targetSdkVersion 35
         versionCode 2
         versionName "1.1"
         multiDexEnabled true
@@ -46,6 +46,9 @@ android {
     namespace 'com.example.samplestickerapp'
     androidResources {
         noCompress 'webp'
+    }
+    buildFeatures {
+        buildConfig = true
     }
 }
 
